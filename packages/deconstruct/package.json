@@ -1,6 +1,6 @@
 {
   "name": "@dukk/doc-repo-deconstruct",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "Deconstruct existing documents into OKF Markdown packages",
   "type": "module",
   "license": "Apache-2.0",

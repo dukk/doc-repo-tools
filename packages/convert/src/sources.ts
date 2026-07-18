@@ -5,6 +5,7 @@ import {
   DocumentGroupConfig,
   DocumentPackage,
 } from "./config.js";
+import { isOkfReservedMarkdown } from "./okf-reserved.js";
 
 export type LogicalDocument = {
   name: string;
@@ -74,6 +75,7 @@ export function discoverMarkdownSources(pkg: DocumentPackage): string[] {
 
   return all
     .filter((rel) => rel.toLowerCase().endsWith(".md"))
+    .filter((rel) => !isOkfReservedMarkdown(rel))
     .filter((rel) => include.some((re) => re.test(rel)))
     .filter((rel) => !exclude.some((re) => re.test(rel)))
     .sort((a, b) => a.localeCompare(b));

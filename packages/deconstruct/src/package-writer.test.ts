@@ -7,6 +7,29 @@ describe("package-writer", () => {
     const yaml = buildConvertYaml("file.pptx");
     assert.match(yaml, /\.original\/\*\*/);
     assert.match(yaml, /pptx/);
+    assert.match(yaml, /cover_page: false/);
+    assert.doesNotMatch(yaml, /reference_doc:/);
+  });
+
+  it("builds convert.yaml for DOCX with cover page and reference_doc", () => {
+    const yaml = buildConvertYaml(
+      "imports/handbook.docx",
+      ".original/handbook.docx",
+    );
+    assert.match(yaml, /cover_page: true/);
+    assert.match(yaml, /reference_doc: "\.original\/handbook\.docx"/);
+    assert.match(yaml, /docx/);
+  });
+
+  it("normalizes backslashes in reference_doc", () => {
+    const yaml = buildConvertYaml(
+      "a.docx",
+      ".original\\Infuze Partners - Articles.docx",
+    );
+    assert.match(
+      yaml,
+      /reference_doc: "\.original\/Infuze Partners - Articles\.docx"/,
+    );
   });
 
   it("builds deconstruct provenance yaml", () => {

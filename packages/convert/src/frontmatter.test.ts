@@ -57,6 +57,26 @@ describe("frontmatter", () => {
     assert.match(md, /^---\n/);
     assert.match(md, /# Cover/);
     assert.match(md, /Body/);
+    assert.match(md, /```\{=openxml\}/);
+    assert.match(md, /w:type="page"/);
+    assert.match(md, /```\{=latex\}/);
+    assert.match(md, /\\newpage/);
+  });
+
+  it("includes subtitle author and date on cover page", () => {
+    const md = toPandocMarkdown(
+      "Body",
+      {
+        title: "Cover",
+        subtitle: "Sub",
+        author: "Ada",
+        date: "2026-01-01",
+      },
+      true,
+    );
+    assert.match(md, /\*Sub\*/);
+    assert.match(md, /Author: Ada/);
+    assert.match(md, /Date: 2026-01-01/);
   });
 
   it("returns body unchanged when metadata empty and no cover", () => {

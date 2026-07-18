@@ -79,7 +79,7 @@ formats: [pdf, docx, html]
 
 sources:
   include: ["**/*.md"]
-  exclude: ["README.md", ".output/**", "index.md", "log.md"]
+  exclude: ["README.md", ".output/**", "**/index.md", "**/log.md"]
   unlisted: individual   # individual | ignore | error
 
 documents:
@@ -90,8 +90,9 @@ documents:
 
 options:
   toc: false
-  cover_page: false
+  cover_page: false          # title page + page break when true
   standalone: true
+  reference_doc: null        # package-relative path; --reference-doc for docx/pptx (headers/footers/styles)
 
 metadata:
   author: ""
@@ -111,7 +112,7 @@ links:
 pandoc_args: []
 ```
 
-Reserved navigation files (`index.md`, `log.md`) are not document packages and are skipped when walking a tree.
+Reserved OKF navigation files (`index.md`, `log.md`) are always excluded from auto-discovery by basename at any depth. They are not document packages and are skipped when walking a tree. Include them only via explicit `documents[].sources` entries.
 
 ## Develop
 

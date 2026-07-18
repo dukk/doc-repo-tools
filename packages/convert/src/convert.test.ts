@@ -14,10 +14,12 @@ import { after, describe, it } from "node:test";
 import { setMermaidRenderHook } from "./assets.js";
 import { loadDocumentPackage } from "./config.js";
 import {
+  buildPandocArgs,
   combineBodies,
   convertPaths,
   findKnowledgeRoot,
   previewLogicalDocuments,
+  quoteForWinShell,
 } from "./convert.js";
 
 const dirs: string[] = [];
@@ -27,6 +29,72 @@ after(() => {
 });
 
 describe("convert helpers", () => {
+  it("quoteForWinShell quotes args with spaces", () => {
+    assert.equal(quoteForWinShell("plain"), "plain");
+    assert.equal(
+      quoteForWinShell("--reference-doc=C:\\a b\\c.docx"),
+      '"--reference-doc=C:\\a b\\c.docx"',
+    );
+  });
+
+  it("buildPandocArgs adds --reference-doc for docx when file exists", () => {
+    const root = mkdtempSync(path.join(tmpdir(), "args-ref-"));
+    dirs.push(root);
+    const pkgDir = path.join(root, "pkg");
+    mkdirSync(path.join(pkgDir, ".original"), { recursive: true });
+    const refRel = ".original/ref.docx";
+    writeFileSync(path.join(pkgDir, refRel), "PK", "utf8");
+    writeFileSync(
+      path.join(pkgDir, "convert.yaml"),
+      `formats: [docx]
+options:
+  reference_doc: "${refRel}"
+`,
+      "utf8",
+    );
+    writeFileSync(path.join(pkgDir, "document.md"), "# Hi\n", "utf8");
+    const pkg = loadDocumentPackage(pkgDir);
+    const { args, warnings } = buildPandocArgs(
+      "in.md",
+      "out.docx",
+      "docx",
+      pkg,
+    );
+    assert.equal(warnings.length, 0);
+    assert.ok(
+      args.some((a) => a.startsWith("--reference-doc=") && a.endsWith("ref.docx")),
+    );
+  });
+
+  it("buildPandocArgs skips reference-doc for pdf and warns when missing", () => {
+    const root = mkdtempSync(path.join(tmpdir(), "args-miss-"));
+    dirs.push(root);
+    const pkgDir = path.join(root, "pkg");
+    mkdirSync(pkgDir, { recursive: true });
+    writeFileSync(
+      path.join(pkgDir, "convert.yaml"),
+      `formats: [pdf, docx]
+options:
+  reference_doc: ".original/missing.docx"
+`,
+      "utf8",
+    );
+    writeFileSync(path.join(pkgDir, "document.md"), "# Hi\n", "utf8");
+    const pkg = loadDocumentPackage(pkgDir);
+    const pdf = buildPandocArgs("in.md", "out.pdf", "pdf", pkg);
+    assert.equal(
+      pdf.args.some((a) => a.startsWith("--reference-doc=")),
+      false,
+    );
+    assert.equal(pdf.warnings.length, 0);
+    const docx = buildPandocArgs("in.md", "out.docx", "docx", pkg);
+    assert.equal(
+      docx.args.some((a) => a.startsWith("--reference-doc=")),
+      false,
+    );
+    assert.match(docx.warnings[0] ?? "", /reference_doc not found/);
+  });
+
   it("previewLogicalDocuments resolves package docs", () => {
     const root = mkdtempSync(path.join(tmpdir(), "conv-"));
     dirs.push(root);
@@ -274,6 +342,7 @@ links:
       },
     );
     assert.match(captured, /# Covered/);
+    assert.match(captured, /```\{=openxml\}/);
   });
 
   it("errors when package has no formats", () => {

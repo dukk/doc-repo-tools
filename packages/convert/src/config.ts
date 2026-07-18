@@ -17,6 +17,8 @@ export type ConvertOptions = {
   toc: boolean;
   cover_page: boolean;
   standalone: boolean;
+  /** Package-relative path to a Pandoc --reference-doc (DOCX/PPTX). */
+  reference_doc: string | null;
 };
 
 export type SourceConfig = {
@@ -69,11 +71,12 @@ const DEFAULT_OPTIONS: ConvertOptions = {
   toc: false,
   cover_page: false,
   standalone: true,
+  reference_doc: null,
 };
 
 const DEFAULT_SOURCES: SourceConfig = {
   include: ["**/*.md"],
-  exclude: ["README.md", ".output/**", ".original/**", "index.md", "log.md"],
+  exclude: ["README.md", ".output/**", ".original/**", "**/index.md", "**/log.md"],
   unlisted: "individual",
 };
 
@@ -141,6 +144,11 @@ export function loadConvertConfig(configPath: string): ConvertConfig {
   }
 
   const optRaw = asRecord(data.options);
+  const referenceRaw = optRaw.reference_doc;
+  const reference_doc =
+    typeof referenceRaw === "string" && referenceRaw.trim()
+      ? referenceRaw.trim().replaceAll("\\", "/")
+      : DEFAULT_OPTIONS.reference_doc;
   const options: ConvertOptions = {
     toc: Boolean(optRaw.toc ?? DEFAULT_OPTIONS.toc),
     cover_page: Boolean(optRaw.cover_page ?? DEFAULT_OPTIONS.cover_page),
@@ -148,6 +156,7 @@ export function loadConvertConfig(configPath: string): ConvertConfig {
       optRaw.standalone === undefined
         ? DEFAULT_OPTIONS.standalone
         : Boolean(optRaw.standalone),
+    reference_doc,
   };
 
   const metadata = asRecord(data.metadata);
@@ -350,8 +359,8 @@ sources:
     - README.md
     - ".output/**"
     - ".original/**"
-    - index.md
-    - log.md
+    - "**/index.md"
+    - "**/log.md"
   unlisted: individual
 assets:
   mode: ${assetsMode}

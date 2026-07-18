@@ -30,6 +30,25 @@ describe("config", () => {
     assert.deepEqual(cfg.formats, ["pdf"]);
     assert.equal(cfg.sources.unlisted, "individual");
     assert.match(cfg.sources.exclude.join(","), /\.original/);
+    assert.equal(cfg.options.reference_doc, null);
+  });
+
+  it("parses options.reference_doc relative path", () => {
+    const root = mkdtempSync(path.join(tmpdir(), "cfg-ref-"));
+    dirs.push(root);
+    const cfgPath = path.join(root, "convert.yaml");
+    writeFileSync(
+      cfgPath,
+      `formats: [docx]
+options:
+  cover_page: true
+  reference_doc: ".original\\\\Infuze Partners.docx"
+`,
+      "utf8",
+    );
+    const cfg = loadConvertConfig(cfgPath);
+    assert.equal(cfg.options.cover_page, true);
+    assert.equal(cfg.options.reference_doc, ".original/Infuze Partners.docx");
   });
 
   it("detects document packages and skips .original", () => {
@@ -47,6 +66,22 @@ describe("config", () => {
 
   it("defaultConvertYaml includes .original exclude", () => {
     assert.match(defaultConvertYaml(), /\.original\/\*\*/);
+  });
+
+  it("defaultConvertYaml excludes OKF reserved navigation files", () => {
+    const yaml = defaultConvertYaml();
+    assert.match(yaml, /\*\*\/index\.md/);
+    assert.match(yaml, /\*\*\/log\.md/);
+  });
+
+  it("loads default exclude for OKF reserved navigation files", () => {
+    const root = mkdtempSync(path.join(tmpdir(), "cfg-reserved-"));
+    dirs.push(root);
+    const cfgPath = path.join(root, "convert.yaml");
+    writeFileSync(cfgPath, "formats: [pdf]\n", "utf8");
+    const cfg = loadConvertConfig(cfgPath);
+    assert.ok(cfg.sources.exclude.includes("**/index.md"));
+    assert.ok(cfg.sources.exclude.includes("**/log.md"));
   });
 
   it("rejects invalid documents group", () => {

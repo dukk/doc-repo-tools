@@ -153,6 +153,56 @@ documents:
     );
     assert.throws(() => resolveLogicalDocuments(loadDocumentPackage(dir)), /Unlisted markdown/);
   });
+
+  it("excludes OKF reserved files from auto-discovery at any depth", () => {
+    const dir = tempPkg(
+      {
+        "document.md": "---\ntype: Reference\ntitle: Main\n---\n\n# Main\n",
+        "index.md": "# Index\n",
+        "log.md": "# Log\n",
+        "nested/index.md": "# Nested index\n",
+        "nested/log.md": "# Nested log\n",
+        "extra.md": "---\ntype: Reference\ntitle: Extra\n---\n\nExtra\n",
+      },
+      `out: .output
+formats: [pdf]
+sources:
+  include: ["**/*.md"]
+  exclude: []
+  unlisted: individual
+`,
+    );
+    const docs = resolveLogicalDocuments(loadDocumentPackage(dir));
+    const allSources = docs.flatMap((d) => d.relativeSources);
+    assert.ok(allSources.includes("document.md"));
+    assert.ok(allSources.includes("extra.md"));
+    assert.ok(!allSources.includes("index.md"));
+    assert.ok(!allSources.includes("log.md"));
+    assert.ok(!allSources.includes("nested/index.md"));
+    assert.ok(!allSources.includes("nested/log.md"));
+  });
+
+  it("allows explicit documents[] inclusion of reserved files", () => {
+    const dir = tempPkg(
+      {
+        "index.md": "# Index\n",
+        "document.md": "---\ntype: Reference\ntitle: Main\n---\n\n# Main\n",
+      },
+      `out: .output
+formats: [pdf]
+sources:
+  include: ["**/*.md"]
+  unlisted: ignore
+documents:
+  - name: nav
+    sources: [index.md]
+`,
+    );
+    const docs = resolveLogicalDocuments(loadDocumentPackage(dir));
+    assert.equal(docs.length, 1);
+    assert.deepEqual(docs[0].relativeSources, ["index.md"]);
+    assert.equal(docs[0].name, "nav");
+  });
 });
 
 describe("sourceAnchorId", () => {

@@ -167,7 +167,7 @@ export async function deconstructFile(
 
     writeFileSync(
       path.join(packageDir, "convert.yaml"),
-      buildConvertYaml(inputFile),
+      buildConvertYaml(inputFile, originalRel),
       "utf8",
     );
     sourceFiles.push("convert.yaml");

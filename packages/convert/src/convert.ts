@@ -91,26 +91,62 @@ export function combineBodies(
     .join("\n\n");
 }
 
-export function runPandoc(
+/** Build pandoc argv (exported for unit tests). */
+export function buildPandocArgs(
   inputMd: string,
   outputFile: string,
   format: OutputFormat,
   pkg: DocumentPackage,
-): void {
+): { args: string[]; warnings: string[] } {
   const args = [inputMd, "-o", outputFile, "-t", format];
+  const warnings: string[] = [];
   if (pkg.config.options.toc) args.push("--toc");
   if (format === "html" && pkg.config.options.standalone) {
     args.push("--standalone");
   }
   // Resource path so generated assets resolve
   args.push(`--resource-path=${path.dirname(outputFile)}`);
+
+  const referenceRel = pkg.config.options.reference_doc;
+  if (referenceRel && (format === "docx" || format === "pptx")) {
+    const referenceAbs = path.resolve(pkg.dir, referenceRel);
+    if (!existsSync(referenceAbs)) {
+      warnings.push(
+        `options.reference_doc not found (skipped --reference-doc): ${referenceRel}`,
+      );
+    } else {
+      args.push(`--reference-doc=${referenceAbs}`);
+    }
+  }
+
   for (const extra of pkg.config.pandoc_args) {
     args.push(extra);
   }
+  return { args, warnings };
+}
 
-  const result = spawnSync("pandoc", args, {
+/** Quote an argv token for cmd.exe when spawn uses shell:true on Windows. */
+export function quoteForWinShell(arg: string): string {
+  if (!/[\s"]/.test(arg)) return arg;
+  return `"${arg.replaceAll('"', '\\"')}"`;
+}
+
+export function runPandoc(
+  inputMd: string,
+  outputFile: string,
+  format: OutputFormat,
+  pkg: DocumentPackage,
+): void {
+  const { args, warnings } = buildPandocArgs(inputMd, outputFile, format, pkg);
+  for (const warning of warnings) {
+    console.warn(`warn: ${warning}`);
+  }
+
+  const useShell = process.platform === "win32";
+  const spawnArgs = useShell ? args.map(quoteForWinShell) : args;
+  const result = spawnSync("pandoc", spawnArgs, {
     encoding: "utf8",
-    shell: process.platform === "win32",
+    shell: useShell,
   });
   if (result.status !== 0) {
     const detail = (result.stderr || result.stdout || "unknown pandoc error").trim();

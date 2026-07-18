@@ -86,7 +86,14 @@ export function toPandocMarkdown(
       ...(subtitle ? [`*${subtitle}*`, ""] : []),
       ...(author ? [`Author: ${author}`, ""] : []),
       ...(date ? [`Date: ${date}`, ""] : []),
-      "---",
+      // Format-safe page break: Pandoc keeps only the matching raw block.
+      "```{=openxml}",
+      "<w:p><w:r><w:br w:type=\"page\"/></w:r></w:p>",
+      "```",
+      "",
+      "```{=latex}",
+      "\\newpage",
+      "```",
       "",
     ];
     nextBody = `${coverLines.join("\n")}${nextBody}`;

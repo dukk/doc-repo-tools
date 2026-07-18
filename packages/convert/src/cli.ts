@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 import path from "node:path";
-import { fileURLToPath } from "node:url";
+import { pathToFileURL } from "node:url";
 import { convertPaths, parseFormats, SUPPORTED_FORMATS } from "./convert.js";
 
 function printHelp(): void {
@@ -127,7 +127,15 @@ export function runCli(argv: string[]): number {
 function isDirectRun(): boolean {
   const entry = process.argv[1];
   if (!entry) return false;
-  return fileURLToPath(import.meta.url) === path.resolve(entry);
+  try {
+    // Compare file URLs so Windows drive-letter casing / separators match.
+    return (
+      import.meta.url ===
+      pathToFileURL(path.resolve(entry)).href
+    );
+  } catch {
+    return false;
+  }
 }
 
 if (isDirectRun()) {

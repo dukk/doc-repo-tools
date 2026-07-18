@@ -1,6 +1,6 @@
 {
   "name": "@dukk/doc-repo-convert",
-  "version": "0.1.0",
+  "version": "0.1.2",
   "description": "Convert OKF Markdown concepts to PDF, DOCX, HTML, and PPTX via Pandoc",
   "type": "module",
   "license": "Apache-2.0",
