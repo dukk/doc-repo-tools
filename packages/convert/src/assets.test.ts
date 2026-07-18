@@ -9,12 +9,13 @@ import {
 import { tmpdir } from "node:os";
 import path from "node:path";
 import { after, describe, it } from "node:test";
-import { prepareSourceAssets } from "./assets.js";
+import { prepareSourceAssets, collectImageHrefs, readUtf8, setMermaidRenderHook } from "./assets.js";
 import { loadDocumentPackage } from "./config.js";
 
 const dirs: string[] = [];
 
 after(() => {
+  setMermaidRenderHook(null);
   for (const dir of dirs) rmSync(dir, { recursive: true, force: true });
 });
 
@@ -93,5 +94,46 @@ sources:
     );
     assert.equal(result.body, body);
     assert.equal(result.assets.length, 0);
+  });
+
+  it("skips external and missing image references", () => {
+    const root = mkdtempSync(path.join(tmpdir(), "doc-repo-assets-skip-"));
+    dirs.push(root);
+    const pkgDir = path.join(root, "pkg");
+    mkdirSync(pkgDir, { recursive: true });
+    writeFileSync(
+      path.join(pkgDir, "convert.yaml"),
+      `out: .output
+formats: [html]
+assets:
+  mode: generate
+  directory: assets
+  diagrams:
+    mermaid: false
+  copy_referenced_images: true
+sources:
+  include: ["**/*.md"]
+`,
+      "utf8",
+    );
+    writeFileSync(path.join(pkgDir, "document.md"), "# T\n", "utf8");
+    const body = "![Ext](https://example.com/x.png) ![Missing](nope.png)\n";
+    const result = prepareSourceAssets(
+      loadDocumentPackage(pkgDir),
+      "document.md",
+      body,
+      path.join(pkgDir, ".output"),
+    );
+    assert.equal(result.body, body);
+    assert.equal(result.assets.length, 0);
+  });
+
+  it("collectImageHrefs and readUtf8 helpers work", () => {
+    assert.deepEqual(collectImageHrefs("![A](img/a.png)"), ["img/a.png"]);
+    const root = mkdtempSync(path.join(tmpdir(), "doc-repo-assets-read-"));
+    dirs.push(root);
+    const file = path.join(root, "x.txt");
+    writeFileSync(file, "data", "utf8");
+    assert.equal(readUtf8(file), "data");
   });
 });

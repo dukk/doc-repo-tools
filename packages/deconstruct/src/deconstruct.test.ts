@@ -10,7 +10,7 @@ import {
 import { tmpdir } from "node:os";
 import path from "node:path";
 import { after, describe, it } from "node:test";
-import { deconstructFile, listInputFiles } from "./deconstruct.js";
+import { deconstructFile, findRepoRoot, listInputFiles } from "./deconstruct.js";
 import { sha256File } from "./hash.js";
 import type { CommandRunner } from "./types.js";
 
@@ -143,5 +143,16 @@ describe("deconstructFile", () => {
         }),
       /No extractor can handle/,
     );
+  });
+
+  it("findRepoRoot prefers deconstruct.extractors.yaml", () => {
+    const root = mkdtempSync(path.join(tmpdir(), "dec6-"));
+    dirs.push(root);
+    writeFileSync(
+      path.join(root, "deconstruct.extractors.yaml"),
+      "extractors: []\n",
+      "utf8",
+    );
+    assert.equal(findRepoRoot(root), root);
   });
 });

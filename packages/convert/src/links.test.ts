@@ -140,4 +140,64 @@ links:
     );
     assert.equal(rewritten, "See B.");
   });
+
+  it("preserves links when policy is preserve", () => {
+    const yaml = `out: .output
+formats: [docx]
+sources:
+  include: ["**/*.md"]
+links:
+  markdown: preserve
+`;
+    const dir = writePkg("pack4", yaml, {
+      "document.md": "---\ntype: X\ntitle: A\n---\n\nSee [B](b.md).\n",
+      "b.md": "---\ntype: X\ntitle: B\n---\n\n",
+    });
+    const pkg = loadDocumentPackage(dir);
+    const docs = resolveLogicalDocuments(pkg);
+    const doc = docs[0];
+    const rewritten = rewriteMarkdownLinksWithOutDirs(
+      "See [B](b.md).",
+      pkg,
+      "document.md",
+      doc,
+      "docx",
+      buildOutputManifest([pkg], new Map([[pkg.dir, docs]])),
+      null,
+      new Map([[pkg.dir, path.join(dir, ".output")]]),
+      [],
+    );
+    assert.equal(rewritten, "See [B](b.md).");
+  });
+
+  it("errors on missing targets when configured", () => {
+    const yaml = `out: .output
+formats: [docx]
+sources:
+  include: ["**/*.md"]
+links:
+  markdown: output
+  missing_target: error
+`;
+    const dir = writePkg("pack5", yaml, {
+      "document.md": "---\ntype: X\ntitle: A\n---\n\n",
+    });
+    const pkg = loadDocumentPackage(dir);
+    const docs = resolveLogicalDocuments(pkg);
+    assert.throws(
+      () =>
+        rewriteMarkdownLinksWithOutDirs(
+          "See [X](missing.md).",
+          pkg,
+          "document.md",
+          docs[0],
+          "docx",
+          buildOutputManifest([pkg], new Map([[pkg.dir, docs]])),
+          null,
+          new Map([[pkg.dir, path.join(dir, ".output")]]),
+          [],
+        ),
+      /unresolved markdown link target/,
+    );
+  });
 });

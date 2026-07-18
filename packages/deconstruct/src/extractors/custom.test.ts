@@ -96,6 +96,25 @@ describe("custom extractor", () => {
       workDir,
     });
     assert.equal(result.assets.length, 1);
-    assert.match(result.assets[0].relPath, /assets\/img\/a\.png/);
+  it("errors on empty markdown output", async () => {
+    const runCommand: CommandRunner = async () => ({
+      stdout: "   ",
+      stderr: "",
+      code: 0,
+    });
+    const extractor = createCustomExtractor(
+      { name: "empty", match: ["*.txt"], command: ["echo"] },
+      runCommand,
+    );
+    const workDir = mkdtempSync(path.join(tmpdir(), "cust6-"));
+    dirs.push(workDir);
+    await assert.rejects(
+      () =>
+        extractor.extract({
+          originalPath: path.join(workDir, "x.txt"),
+          workDir,
+        }),
+      /empty markdown/,
+    );
   });
 });

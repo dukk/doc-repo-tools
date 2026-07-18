@@ -52,4 +52,13 @@ describe("frontmatter", () => {
     assert.match(md, /# Cover/);
     assert.match(md, /Body/);
   });
+
+  it("returns body unchanged when metadata empty and no cover", () => {
+    assert.equal(toPandocMarkdown("Plain", {}, false), "Plain");
+  });
+
+  it("handles invalid frontmatter delimiter gracefully", () => {
+    const doc = parseFrontmatter("---\nno closing");
+    assert.equal(doc.body, "---\nno closing");
+  });
 });

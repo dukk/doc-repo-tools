@@ -41,4 +41,11 @@ describe("deconstruct frontmatter", () => {
   it("reads title from metadata", () => {
     assert.equal(titleFromMetadata({ title: " From meta " }), "From meta");
   });
+
+  it("truncates long descriptions", () => {
+    const long = "word ".repeat(80).trim();
+    const desc = descriptionFromBody(`${long}\n\nSecond.`);
+    assert.ok(desc.endsWith("…"));
+    assert.ok(desc.length <= 240);
+  });
 });

@@ -11,6 +11,7 @@ describe("deconstruct formats", () => {
     assert.deepEqual(formatsForSource("a.pptx"), ["pptx", "pdf"]);
     assert.deepEqual(formatsForSource("a.pdf"), ["pdf", "docx"]);
     assert.deepEqual(formatsForSource("a.docx"), ["pdf", "docx"]);
+    assert.deepEqual(formatsForSource("a.html"), ["html", "pdf", "docx"]);
   });
 
   it("slugifies filenames", () => {
