@@ -1,0 +1,43 @@
+{
+  "name": "@dukk/doc-repo-convert",
+  "version": "0.1.0",
+  "description": "Convert OKF Markdown concepts to PDF, DOCX, HTML, and PPTX via Pandoc",
+  "type": "module",
+  "license": "Apache-2.0",
+  "author": "Justin",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/dukk/doc-repo-tools.git"
+  },
+  "bugs": {
+    "url": "https://github.com/dukk/doc-repo-tools/issues"
+  },
+  "homepage": "https://github.com/dukk/doc-repo-tools#readme",
+  "bin": {
+    "doc-convert": "./dist/cli.js"
+  },
+  "files": [
+    "dist"
+  ],
+  "publishConfig": {
+    "registry": "https://npm.pkg.github.com"
+  },
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "start": "node dist/cli.js",
+    "test": "pnpm build && node --test dist/sources.test.js dist/links.test.js dist/assets.test.js dist/pipeline.test.js",
+    "prepublishOnly": "pnpm build && pnpm test"
+  },
+  "dependencies": {
+    "@mermaid-js/mermaid-cli": "^11.4.2",
+    "yaml": "^2.8.0"
+  },
+  "devDependencies": {
+    "@types/node": "^22.15.29",
+    "typescript": "^5.8.3"
+  },
+  "engines": {
+    "node": ">=20"
+  },
+  "packageManager": "pnpm@10.11.0"
+}
