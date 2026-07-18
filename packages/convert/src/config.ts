@@ -73,7 +73,7 @@ const DEFAULT_OPTIONS: ConvertOptions = {
 
 const DEFAULT_SOURCES: SourceConfig = {
   include: ["**/*.md"],
-  exclude: ["README.md", ".output/**", "index.md", "log.md"],
+  exclude: ["README.md", ".output/**", ".original/**", "index.md", "log.md"],
   unlisted: "individual",
 };
 
@@ -306,6 +306,7 @@ export function collectDocumentPackages(inputPath: string): DocumentPackage[] {
       if (
         entry.name === "node_modules" ||
         entry.name === ".output" ||
+        entry.name === ".original" ||
         entry.name === "dist"
       ) {
         continue;
@@ -348,6 +349,7 @@ sources:
   exclude:
     - README.md
     - ".output/**"
+    - ".original/**"
     - index.md
     - log.md
   unlisted: individual

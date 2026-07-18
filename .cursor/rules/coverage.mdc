@@ -1,0 +1,13 @@
+---
+description: TypeScript coverage and test requirements for doc-repo-tools
+globs: packages/**/*.ts
+alwaysApply: false
+---
+
+# Coverage requirements
+
+- All TypeScript packages under `packages/` must maintain **≥80%** unit test coverage (lines, statements, functions, branches).
+- Run `pnpm test:coverage` from the repo root before finishing TypeScript changes.
+- Do not lower thresholds or exclude production modules to pass the gate.
+- Prefer injectable command runners and temp-dir fixtures over skipping hard-to-test code.
+- New packages must ship with `test` and `test:coverage` scripts using the shared `.c8rc.json`.

@@ -1,5 +1,6 @@
 #!/usr/bin/env node
 import path from "node:path";
+import { fileURLToPath } from "node:url";
 import { convertPaths, parseFormats, SUPPORTED_FORMATS } from "./convert.js";
 
 function printHelp(): void {
@@ -28,7 +29,7 @@ Examples:
 `);
 }
 
-function parseArgs(argv: string[]): {
+export function parseArgs(argv: string[]): {
   formats: string;
   outDir: string | undefined;
   input: string;
@@ -117,4 +118,12 @@ function main(): void {
   }
 }
 
-main();
+function isDirectRun(): boolean {
+  const entry = process.argv[1];
+  if (!entry) return false;
+  return fileURLToPath(import.meta.url) === path.resolve(entry);
+}
+
+if (isDirectRun()) {
+  main();
+}

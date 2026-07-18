@@ -60,7 +60,7 @@ export function assertPandocAvailable(): void {
   }
 }
 
-function findKnowledgeRoot(startDir: string): string | null {
+export function findKnowledgeRoot(startDir: string): string | null {
   let dir = path.resolve(startDir);
   while (true) {
     const candidate = path.join(dir, "knowledge");
@@ -73,7 +73,7 @@ function findKnowledgeRoot(startDir: string): string | null {
   }
 }
 
-function combineBodies(
+export function combineBodies(
   parts: Array<{ relativeSource: string; body: string; title?: string }>,
 ): string {
   if (parts.length === 1) {
@@ -91,7 +91,7 @@ function combineBodies(
     .join("\n\n");
 }
 
-function runPandoc(
+export function runPandoc(
   inputMd: string,
   outputFile: string,
   format: OutputFormat,
@@ -118,11 +118,22 @@ function runPandoc(
   }
 }
 
+export type ConvertRuntime = {
+  assertPandocAvailable: () => void;
+  runPandoc: typeof runPandoc;
+};
+
+const defaultRuntime: ConvertRuntime = {
+  assertPandocAvailable,
+  runPandoc,
+};
+
 export function convertPaths(
   inputPath: string,
   overrides: ConvertOverrides = {},
+  runtime: ConvertRuntime = defaultRuntime,
 ): ConvertResult[] {
-  assertPandocAvailable();
+  runtime.assertPandocAvailable();
   const packages = collectDocumentPackages(inputPath);
   if (packages.length === 0) {
     throw new Error(
@@ -223,7 +234,7 @@ export function convertPaths(
         try {
           writeFileSync(tempMd, pandocMd, "utf8");
           const outputFile = path.join(outDir, `${doc.name}${EXT[format]}`);
-          runPandoc(tempMd, outputFile, format, pkg);
+          runtime.runPandoc(tempMd, outputFile, format, pkg);
           outputs.push(outputFile);
         } finally {
           rmSync(tempDir, { recursive: true, force: true });

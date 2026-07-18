@@ -1,0 +1,10 @@
+# Custom extractors for doc-deconstruct.
+# Match patterns use simple globs against the source basename or full path.
+#
+# extractors:
+#   - name: my-tool
+#     match: ["*.special.docx"]
+#     command: ["node", "tools/extractors/my-tool.js", "{{input}}", "{{workDir}}"]
+#     # stdout = markdown body, or write workDir/document.md + assets/
+
+extractors: []

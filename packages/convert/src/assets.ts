@@ -91,7 +91,22 @@ export function assertMermaidAvailable(): void {
   cachedMmdc = resolveMmdc();
 }
 
+let mermaidRenderHook: ((code: string, outputSvg: string) => void) | null = null;
+
+/** Test hook: bypass mmdc when set. */
+export function setMermaidRenderHook(
+  hook: ((code: string, outputSvg: string) => void) | null,
+): void {
+  mermaidRenderHook = hook;
+  cachedMmdc = hook ? "mock-mmdc" : null;
+}
+
 function renderMermaid(source: string, outputSvg: string): void {
+  if (mermaidRenderHook) {
+    mkdirSync(path.dirname(outputSvg), { recursive: true });
+    mermaidRenderHook(source, outputSvg);
+    return;
+  }
   mkdirSync(path.dirname(outputSvg), { recursive: true });
   const tmpMmd = `${outputSvg}.mmd`;
   writeFileSync(tmpMmd, source, "utf8");
