@@ -38,6 +38,12 @@ describe("globToRegExp", () => {
     assert.equal(re.test("a/b/c.md"), true);
     assert.equal(re.test("a/b/c.txt"), false);
   });
+
+  it("matches single-segment wildcards", () => {
+    const re = globToRegExp("?.md");
+    assert.equal(re.test("a.md"), true);
+    assert.equal(re.test("ab.md"), false);
+  });
 });
 
 describe("resolveLogicalDocuments", () => {

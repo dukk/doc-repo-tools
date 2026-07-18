@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
-import { parseArgs } from "./cli.js";
+import { parseArgs, runCli } from "./cli.js";
 
 describe("deconstruct parseArgs", () => {
   it("parses required out and options", () => {
@@ -33,5 +33,19 @@ describe("deconstruct parseArgs", () => {
     assert.equal(args.type, "Reference");
     assert.equal(args.extractor, "auto");
     assert.equal(args.force, false);
+  });
+});
+
+describe("runCli", () => {
+  it("returns 1 when out is missing", async () => {
+    assert.equal(await runCli(["file.docx"]), 1);
+  });
+
+  it("returns 0 for help", async () => {
+    assert.equal(await runCli(["--help"]), 0);
+  });
+
+  it("returns 1 when deconstruct fails", async () => {
+    assert.equal(await runCli(["missing.docx", "--out", "out"]), 1);
   });
 });

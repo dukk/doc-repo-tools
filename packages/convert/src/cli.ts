@@ -69,11 +69,16 @@ export function parseArgs(argv: string[]): {
 }
 
 function main(): void {
+  const code = runCli(process.argv.slice(2));
+  process.exit(code);
+}
+
+export function runCli(argv: string[]): number {
   try {
-    const args = parseArgs(process.argv.slice(2));
+    const args = parseArgs(argv);
     if (args.help || !args.input) {
       printHelp();
-      process.exit(args.help ? 0 : 1);
+      return args.help ? 0 : 1;
     }
 
     const overrides: {
@@ -111,10 +116,11 @@ function main(): void {
     console.log(
       `Converted ${results.length} logical document(s)${warnCount ? ` with ${warnCount} warning(s)` : ""}.`,
     );
+    return 0;
   } catch (err) {
     const message = err instanceof Error ? err.message : String(err);
     console.error(`Error: ${message}`);
-    process.exit(1);
+    return 1;
   }
 }
 

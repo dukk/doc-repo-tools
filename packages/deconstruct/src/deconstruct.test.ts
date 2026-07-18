@@ -155,4 +155,107 @@ describe("deconstructFile", () => {
     );
     assert.equal(findRepoRoot(root), root);
   });
+
+  it("allows force re-run when original hash matches", async () => {
+    const root = mkdtempSync(path.join(tmpdir(), "dec7-"));
+    dirs.push(root);
+    const source = path.join(root, "a.docx");
+    writeFileSync(source, "SAME", "utf8");
+    const outDir = path.join(root, "pkg");
+    const runCommand: CommandRunner = async () => ({
+      stdout: "Body one.",
+      stderr: "",
+      code: 0,
+    });
+    await deconstructFile({
+      inputPath: source,
+      inputFile: source,
+      outDir,
+      runCommand,
+      repoRoot: root,
+    });
+    await deconstructFile({
+      inputPath: source,
+      inputFile: source,
+      outDir,
+      runCommand,
+      repoRoot: root,
+      force: true,
+    });
+    const doc = readFileSync(path.join(outDir, "document.md"), "utf8");
+    assert.match(doc, /Body one/);
+  });
+
+  it("refuses force when original bytes differ", async () => {
+    const root = mkdtempSync(path.join(tmpdir(), "dec8-"));
+    dirs.push(root);
+    const source = path.join(root, "a.docx");
+    writeFileSync(source, "ONE", "utf8");
+    const outDir = path.join(root, "pkg");
+    const runCommand: CommandRunner = async () => ({
+      stdout: "Body",
+      stderr: "",
+      code: 0,
+    });
+    await deconstructFile({
+      inputPath: source,
+      inputFile: source,
+      outDir,
+      runCommand,
+      repoRoot: root,
+    });
+    writeFileSync(source, "TWO", "utf8");
+    await assert.rejects(
+      () =>
+        deconstructFile({
+          inputPath: source,
+          inputFile: source,
+          outDir,
+          runCommand,
+          repoRoot: root,
+          force: true,
+        }),
+      /Refusing to overwrite .original/,
+    );
+  });
+
+  it("uses explicit title override", async () => {
+    const root = mkdtempSync(path.join(tmpdir(), "dec10-"));
+    dirs.push(root);
+    const source = path.join(root, "a.docx");
+    writeFileSync(source, "X", "utf8");
+    const runCommand: CommandRunner = async () => ({
+      stdout: "# Ignored\n",
+      stderr: "",
+      code: 0,
+    });
+    await deconstructFile({
+      inputPath: source,
+      inputFile: source,
+      outDir: path.join(root, "pkg"),
+      title: "Custom Title",
+      runCommand,
+      repoRoot: root,
+    });
+    const doc = readFileSync(path.join(root, "pkg", "document.md"), "utf8");
+    assert.match(doc, /title: Custom Title/);
+  });
+
+  it("errors when input directory has no files", async () => {
+    const root = mkdtempSync(path.join(tmpdir(), "dec9-"));
+    dirs.push(root);
+    const empty = path.join(root, "empty");
+    mkdirSync(empty, { recursive: true });
+    const { deconstructPaths } = await import("./deconstruct.js");
+    await assert.rejects(
+      () =>
+        deconstructPaths({
+          inputPath: empty,
+          outDir: path.join(root, "out"),
+          runCommand: async () => ({ stdout: "x", stderr: "", code: 0 }),
+          repoRoot: root,
+        }),
+      /No supported files/,
+    );
+  });
 });

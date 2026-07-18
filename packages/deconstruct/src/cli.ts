@@ -86,11 +86,16 @@ Examples:
 }
 
 async function main(): Promise<void> {
+  const code = await runCli(process.argv.slice(2));
+  process.exit(code);
+}
+
+export async function runCli(argv: string[]): Promise<number> {
   try {
-    const args = parseArgs(process.argv.slice(2));
+    const args = parseArgs(argv);
     if (args.help || !args.input || !args.outDir) {
       printHelp();
-      process.exit(args.help ? 0 : 1);
+      return args.help ? 0 : 1;
     }
 
     const results = await deconstructPaths({
@@ -109,13 +114,16 @@ async function main(): Promise<void> {
       for (const file of result.sourceFiles) {
         console.log(`  wrote: ${file}`);
       }
-      console.log(`  next: doc-convert ${path.relative(process.cwd(), result.packageDir)}`);
+      console.log(
+        `  next: doc-convert ${path.relative(process.cwd(), result.packageDir)}`,
+      );
     }
     console.log(`Deconstructed ${results.length} package(s).`);
+    return 0;
   } catch (err) {
     const message = err instanceof Error ? err.message : String(err);
     console.error(`Error: ${message}`);
-    process.exit(1);
+    return 1;
   }
 }
 

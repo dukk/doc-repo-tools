@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
-import { parseArgs } from "./cli.js";
+import { parseArgs, runCli } from "./cli.js";
 
 describe("parseArgs", () => {
   it("parses format and out overrides", () => {
@@ -25,5 +25,15 @@ describe("parseArgs", () => {
 
   it("throws on unknown option", () => {
     assert.throws(() => parseArgs(["--nope"]), /Unknown option/);
+  });
+});
+
+describe("runCli", () => {
+  it("returns 1 when input missing", () => {
+    assert.equal(runCli([]), 1);
+  });
+
+  it("returns 0 for help", () => {
+    assert.equal(runCli(["--help"]), 0);
   });
 });

@@ -1,6 +1,11 @@
 # doc-repo-tools
 
-Tooling for [OKF document repos](https://github.com/dukk/doc-repo-template). This repository publishes **`@dukk/doc-repo-convert`** — convert OKF document packages to **PDF**, **DOCX**, **HTML**, and **PPTX** using Pandoc.
+Tooling for [OKF document repos](https://github.com/dukk/doc-repo-template). This monorepo publishes:
+
+| Package | CLI | Role |
+|---------|-----|------|
+| `@dukk/doc-repo-convert` | `doc-convert` | Export OKF packages → PDF, DOCX, HTML, PPTX |
+| `@dukk/doc-repo-deconstruct` | `doc-deconstruct` | Import existing documents → OKF Markdown packages |
 
 License: [Apache-2.0](LICENSE).
 
@@ -15,9 +20,7 @@ License: [Apache-2.0](LICENSE).
 `NODE_AUTH_TOKEN` must be a GitHub PAT (or `gh` token) with `read:packages`.
 
 ```bash
-pnpm add @dukk/doc-repo-convert
-# or
-npm install @dukk/doc-repo-convert
+pnpm add @dukk/doc-repo-convert @dukk/doc-repo-deconstruct
 ```
 
 ## Prerequisites
@@ -42,7 +45,19 @@ doc-convert knowledge/
 doc-convert knowledge/diagrams/system-map --out .output
 ```
 
-From a doc-repo template clone, the usual wrapper is `pnpm convert` (invokes `doc-convert`).
+From a doc-repo template clone, the usual wrappers are `pnpm convert` and `pnpm deconstruct`.
+
+## Deconstruct existing documents
+
+Import legacy sources into maintainable OKF packages. Originals are copied verbatim to `.original/` inside each package.
+
+```bash
+doc-deconstruct imports/handbook.docx --out knowledge/text-heavy/handbook
+doc-deconstruct imports/ --out knowledge/imported
+doc-deconstruct source.docx --out knowledge/foo --type Policy --force
+```
+
+Register custom extractors in repo-root `deconstruct.extractors.yaml` (see [`deconstruct.extractors.yaml`](deconstruct.extractors.yaml)). Built-in Pandoc extraction runs when no custom matcher applies.
 
 ## Document package
 
@@ -104,7 +119,10 @@ Reserved navigation files (`index.md`, `log.md`) are not document packages and a
 pnpm install
 pnpm build
 pnpm test
+pnpm test:coverage   # enforces ≥80% lines/branches/functions/statements (c8)
 ```
+
+Packages live under `packages/convert` and `packages/deconstruct`. CI runs `pnpm test:coverage` on every push/PR.
 
 ### Local link into a sibling template
 
@@ -116,19 +134,20 @@ pnpm build
 pnpm link --global
 
 # in doc-repo-template
-pnpm link --global @dukk/doc-repo-convert
+pnpm link --global @dukk/doc-repo-convert @dukk/doc-repo-deconstruct
 ```
 
-Or temporarily set `"@dukk/doc-repo-convert": "link:../doc-repo-tools"` in the template `package.json` (do not commit that override).
+Or temporarily set workspace links in the template `package.json` (do not commit):
+
+```json
+"@dukk/doc-repo-convert": "link:../doc-repo-tools/packages/convert",
+"@dukk/doc-repo-deconstruct": "link:../doc-repo-tools/packages/deconstruct"
+```
 
 ## Publish
 
 ```bash
-pnpm publish
+pnpm -r publish
 ```
 
-Publishes to `https://npm.pkg.github.com` as `@dukk/doc-repo-convert`. Requires a token with `write:packages`.
-
-## Next
-
-A one-command scaffold (`npx` / similar) that initializes a full doc-repo directory tree from this tooling is planned; today, clone [doc-repo-template](https://github.com/dukk/doc-repo-template) and run `pnpm init-repo`.
+Publishes both packages to `https://npm.pkg.github.com`. Requires a token with `write:packages`.

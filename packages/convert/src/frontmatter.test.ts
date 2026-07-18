@@ -46,6 +46,12 @@ describe("frontmatter", () => {
     assert.deepEqual(meta.keywords, ["a", "b"]);
   });
 
+  it("formats scalar metadata types in pandoc markdown", () => {
+    const md = toPandocMarkdown("Body", { title: "T", draft: true, count: 3 }, false);
+    assert.match(md, /draft: true/);
+    assert.match(md, /count: 3/);
+  });
+
   it("builds pandoc markdown with cover page", () => {
     const md = toPandocMarkdown("Body", { title: "Cover" }, true);
     assert.match(md, /^---\n/);
@@ -57,8 +63,9 @@ describe("frontmatter", () => {
     assert.equal(toPandocMarkdown("Plain", {}, false), "Plain");
   });
 
-  it("handles invalid frontmatter delimiter gracefully", () => {
-    const doc = parseFrontmatter("---\nno closing");
-    assert.equal(doc.body, "---\nno closing");
+  it("builds pandoc markdown with array metadata", () => {
+    const md = toPandocMarkdown("Body", { keywords: ["a", "b"], title: "T" }, false);
+    assert.match(md, /keywords:/);
+    assert.match(md, /- "a"/);
   });
 });

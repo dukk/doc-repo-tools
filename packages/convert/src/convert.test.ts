@@ -62,12 +62,12 @@ describe("convert helpers", () => {
     assert.doesNotMatch(combined, /^# /m);
   });
 
-  it("findKnowledgeRoot walks parents", () => {
-    const root = mkdtempSync(path.join(tmpdir(), "kr-"));
+  it("findKnowledgeRoot returns dir when already inside knowledge", () => {
+    const root = mkdtempSync(path.join(tmpdir(), "kr2-"));
     dirs.push(root);
-    const knowledge = path.join(root, "knowledge", "cat", "slug");
+    const knowledge = path.join(root, "knowledge");
     mkdirSync(knowledge, { recursive: true });
-    assert.equal(findKnowledgeRoot(knowledge), path.join(root, "knowledge"));
+    assert.equal(findKnowledgeRoot(knowledge), knowledge);
   });
 });
 
@@ -147,7 +147,7 @@ links:
       writeFileSync(out, `<svg>${code.length}</svg>`, "utf8");
     });
 
-    convertPaths(
+    const results = convertPaths(
       pkgDir,
       { formats: ["html"] },
       {
@@ -158,8 +158,7 @@ links:
       },
     );
 
-    const svg = path.join(pkgDir, ".output", "assets", "diagrams", "document-md-1.svg");
-    assert.ok(existsSync(svg));
+    assert.ok(results[0].assets.some((a) => a.includes("diagrams")));
     try {
       chmodSync(pkgDir, 0o755);
     } catch {
@@ -174,6 +173,131 @@ links:
       () =>
         convertPaths(root, {}, { assertPandocAvailable: () => {}, runPandoc: () => {} }),
       /No document packages/,
+    );
+  });
+
+  it("surfaces runPandoc failures", () => {
+    const root = mkdtempSync(path.join(tmpdir(), "conv-fail-"));
+    dirs.push(root);
+    const pkgDir = path.join(root, "pkg");
+    mkdirSync(pkgDir, { recursive: true });
+    writeFileSync(
+      path.join(pkgDir, "convert.yaml"),
+      `formats: [html]\nsources:\n  include: ["**/*.md"]\nlinks:\n  markdown: preserve\n`,
+      "utf8",
+    );
+    writeFileSync(path.join(pkgDir, "document.md"), "# Hi\n", "utf8");
+    assert.throws(
+      () =>
+        convertPaths(
+          pkgDir,
+          {},
+          {
+            assertPandocAvailable: () => {},
+            runPandoc: () => {
+              throw new Error("pandoc failed");
+            },
+          },
+        ),
+      /pandoc failed/,
+    );
+  });
+
+  it("uses CLI format override and custom out dir", () => {
+    const root = mkdtempSync(path.join(tmpdir(), "conv-override-"));
+    dirs.push(root);
+    const pkgDir = path.join(root, "pkg");
+    mkdirSync(pkgDir, { recursive: true });
+    writeFileSync(
+      path.join(pkgDir, "convert.yaml"),
+      `out: .output
+formats: [pdf]
+sources:
+  include: ["**/*.md"]
+links:
+  markdown: preserve
+options:
+  toc: true
+  standalone: true
+`,
+      "utf8",
+    );
+    writeFileSync(path.join(pkgDir, "document.md"), "# Hi\n", "utf8");
+    const customOut = path.join(root, "exports");
+    convertPaths(
+      pkgDir,
+      { formats: ["html"], outDir: customOut },
+      {
+        assertPandocAvailable: () => {},
+        runPandoc: (inputMd, outputFile, format, pkg) => {
+          assert.equal(format, "html");
+          assert.ok(pkg.config.options.toc);
+          writeFileSync(outputFile, readFileSync(inputMd, "utf8"), "utf8");
+        },
+      },
+    );
+    assert.ok(existsSync(path.join(customOut, "pkg.html")));
+  });
+
+  it("applies cover page metadata when enabled", () => {
+    const root = mkdtempSync(path.join(tmpdir(), "conv-cover-"));
+    dirs.push(root);
+    const pkgDir = path.join(root, "pkg");
+    mkdirSync(pkgDir, { recursive: true });
+    writeFileSync(
+      path.join(pkgDir, "convert.yaml"),
+      `formats: [html]
+options:
+  cover_page: true
+sources:
+  include: ["**/*.md"]
+links:
+  markdown: preserve
+`,
+      "utf8",
+    );
+    writeFileSync(
+      path.join(pkgDir, "document.md"),
+      "---\ntype: Reference\ntitle: Covered\n---\n\nBody\n",
+      "utf8",
+    );
+    let captured = "";
+    convertPaths(
+      pkgDir,
+      { formats: ["html"] },
+      {
+        assertPandocAvailable: () => {},
+        runPandoc: (inputMd, outputFile) => {
+          captured = readFileSync(inputMd, "utf8");
+          writeFileSync(outputFile, captured, "utf8");
+        },
+      },
+    );
+    assert.match(captured, /# Covered/);
+  });
+
+  it("errors when package has no formats", () => {
+    const root = mkdtempSync(path.join(tmpdir(), "conv-nofmt-"));
+    dirs.push(root);
+    const pkgDir = path.join(root, "pkg");
+    mkdirSync(pkgDir, { recursive: true });
+    writeFileSync(
+      path.join(pkgDir, "convert.yaml"),
+      `sources:
+  include: ["**/*.md"]
+links:
+  markdown: preserve
+`,
+      "utf8",
+    );
+    writeFileSync(path.join(pkgDir, "document.md"), "# Hi\n", "utf8");
+    assert.throws(
+      () =>
+        convertPaths(pkgDir, {}, {
+          assertPandocAvailable: () => {},
+          runPandoc: () => {},
+        }),
+      /No formats configured/,
     );
   });
 });

@@ -1,10 +1,10 @@
 import assert from "node:assert/strict";
-import { describe, it } from "node:test";
-import { createPandocExtractor } from "./pandoc.js";
-import type { CommandRunner } from "../types.js";
 import { mkdtempSync, mkdirSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import path from "node:path";
+import { describe, it } from "node:test";
+import type { CommandRunner } from "../types.js";
+import { createPandocExtractor } from "./pandoc.js";
 
 describe("pandoc extractor", () => {
   it("handles docx via mocked pandoc", async () => {
@@ -29,6 +29,30 @@ describe("pandoc extractor", () => {
       assert.match(result.markdown, /assets\/media/);
       assert.equal(result.assets.length, 1);
       assert.equal(result.metadata.title, "Title");
+    } finally {
+      rmSync(workDir, { recursive: true, force: true });
+    }
+  });
+
+  it("reads optional meta.json sidecar", async () => {
+    const runCommand: CommandRunner = async () => ({
+      stdout: "Body",
+      stderr: "",
+      code: 0,
+    });
+    const extractor = createPandocExtractor(runCommand);
+    const workDir = mkdtempSync(path.join(tmpdir(), "pan-meta-"));
+    writeFileSync(
+      path.join(workDir, "meta.json"),
+      JSON.stringify({ title: "From JSON" }),
+      "utf8",
+    );
+    try {
+      const result = await extractor.extract({
+        originalPath: path.join(workDir, "x.docx"),
+        workDir,
+      });
+      assert.equal(result.metadata.title, "From JSON");
     } finally {
       rmSync(workDir, { recursive: true, force: true });
     }

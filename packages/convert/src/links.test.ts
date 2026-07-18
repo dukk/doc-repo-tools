@@ -2,6 +2,7 @@ import assert from "node:assert/strict";
 import {
   mkdtempSync,
   mkdirSync,
+  readFileSync,
   rmSync,
   writeFileSync,
 } from "node:fs";
@@ -199,5 +200,168 @@ links:
         ),
       /unresolved markdown link target/,
     );
+  });
+
+  it("warns on missing targets without rewriting", () => {
+    const yaml = `out: .output
+formats: [docx]
+sources:
+  include: ["**/*.md"]
+links:
+  markdown: output
+  missing_target: warn
+`;
+    const dir = writePkg("pack6", yaml, {
+      "document.md": "---\ntype: X\ntitle: A\n---\n\n",
+    });
+    const pkg = loadDocumentPackage(dir);
+    const docs = resolveLogicalDocuments(pkg);
+    const warnings: import("./links.js").LinkWarning[] = [];
+    const rewritten = rewriteMarkdownLinksWithOutDirs(
+      "See [X](missing.md).",
+      pkg,
+      "document.md",
+      docs[0],
+      "docx",
+      buildOutputManifest([pkg], new Map([[pkg.dir, docs]])),
+      null,
+      new Map([[pkg.dir, path.join(dir, ".output")]]),
+      warnings,
+    );
+    assert.equal(rewritten, "See [X](missing.md).");
+    assert.equal(warnings.length, 1);
+  });
+
+  it("rewrites hash links within the same combined document", () => {
+    const yaml = `out: .output
+formats: [html]
+sources:
+  include: ["**/*.md"]
+documents:
+  - name: book
+    sources: [a.md, b.md]
+links:
+  markdown: output
+`;
+    const dir = writePkg("pack7", yaml, {
+      "a.md": "---\ntype: X\ntitle: A\n---\n\nSee [B](b.md#section)\n",
+      "b.md": "---\ntype: X\ntitle: B\n---\n\n## Section\n",
+    });
+    const pkg = loadDocumentPackage(dir);
+    const docs = resolveLogicalDocuments(pkg);
+    const book = docs[0];
+    const rewritten = rewriteMarkdownLinksWithOutDirs(
+      "See [B](b.md#section)",
+      pkg,
+      "a.md",
+      book,
+      "html",
+      buildOutputManifest([pkg], new Map([[pkg.dir, docs]])),
+      null,
+      new Map([[pkg.dir, path.join(dir, ".output")]]),
+      [],
+    );
+    assert.equal(rewritten, "See [B](#section)");
+  });
+
+  it("preserves missing links when missing_target is preserve", () => {
+    const yaml = `out: .output
+formats: [docx]
+sources:
+  include: ["**/*.md"]
+links:
+  markdown: output
+  missing_target: preserve
+`;
+    const dir = writePkg("pack8", yaml, {
+      "document.md": "---\ntype: X\ntitle: A\n---\n\n",
+    });
+    const pkg = loadDocumentPackage(dir);
+    const docs = resolveLogicalDocuments(pkg);
+    const warnings: import("./links.js").LinkWarning[] = [];
+    const rewritten = rewriteMarkdownLinksWithOutDirs(
+      "See [X](missing.md).",
+      pkg,
+      "document.md",
+      docs[0],
+      "docx",
+      buildOutputManifest([pkg], new Map([[pkg.dir, docs]])),
+      null,
+      new Map([[pkg.dir, path.join(dir, ".output")]]),
+      warnings,
+    );
+    assert.equal(rewritten, "See [X](missing.md).");
+    assert.equal(warnings.length, 0);
+  });
+
+  it("rewrites cross-package links using relative output paths", () => {
+    const root = mkdtempSync(path.join(tmpdir(), "link-cross-"));
+    dirs.push(root);
+    const alpha = writePkg("alpha", `out: .output
+formats: [docx]
+sources:
+  include: ["**/*.md"]
+  unlisted: ignore
+documents:
+  - name: alpha-doc
+    sources: [a.md]
+links:
+  markdown: output
+`, {
+      "a.md": "---\ntype: X\ntitle: A\n---\n\nSee [B](../beta/b.md).\n",
+    });
+    const beta = writePkg("beta", `out: .output
+formats: [docx]
+sources:
+  include: ["**/*.md"]
+  unlisted: ignore
+documents:
+  - name: beta-doc
+    sources: [b.md]
+links:
+  markdown: output
+`, {
+      "b.md": "---\ntype: X\ntitle: B\n---\n\nB\n",
+    });
+    // relocate beta beside alpha under shared root
+    const shared = path.join(root, "shared");
+    mkdirSync(shared, { recursive: true });
+    const alphaDir = path.join(shared, "alpha");
+    const betaDir = path.join(shared, "beta");
+    mkdirSync(alphaDir, { recursive: true });
+    mkdirSync(betaDir, { recursive: true });
+    writeFileSync(path.join(alphaDir, "convert.yaml"), readFileSync(path.join(alpha, "convert.yaml"), "utf8"), "utf8");
+    writeFileSync(path.join(alphaDir, "a.md"), readFileSync(path.join(alpha, "a.md"), "utf8"), "utf8");
+    writeFileSync(path.join(betaDir, "convert.yaml"), readFileSync(path.join(beta, "convert.yaml"), "utf8"), "utf8");
+    writeFileSync(path.join(betaDir, "b.md"), readFileSync(path.join(beta, "b.md"), "utf8"), "utf8");
+
+    const pkgA = loadDocumentPackage(alphaDir);
+    const pkgB = loadDocumentPackage(betaDir);
+    const docsA = resolveLogicalDocuments(pkgA);
+    const docsB = resolveLogicalDocuments(pkgB);
+    const manifest = buildOutputManifest(
+      [pkgA, pkgB],
+      new Map([
+        [pkgA.dir, docsA],
+        [pkgB.dir, docsB],
+      ]),
+    );
+    const outA = path.join(alphaDir, ".output");
+    const outB = path.join(betaDir, ".output");
+    const rewritten = rewriteMarkdownLinksWithOutDirs(
+      "See [B](../beta/b.md).",
+      pkgA,
+      "a.md",
+      docsA[0],
+      "docx",
+      manifest,
+      null,
+      new Map([
+        [pkgA.dir, outA],
+        [pkgB.dir, outB],
+      ]),
+      [],
+    );
+    assert.match(rewritten, /beta-doc\.docx/);
   });
 });

@@ -88,6 +88,10 @@ function resolveMmdc(): string {
 let cachedMmdc: string | null = null;
 
 export function assertMermaidAvailable(): void {
+  if (mermaidRenderHook) {
+    cachedMmdc = "mock-mmdc";
+    return;
+  }
   cachedMmdc = resolveMmdc();
 }
 

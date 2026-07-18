@@ -96,6 +96,9 @@ describe("custom extractor", () => {
       workDir,
     });
     assert.equal(result.assets.length, 1);
+    assert.match(result.assets[0].relPath, /assets\/img\/a\.png/);
+  });
+
   it("errors on empty markdown output", async () => {
     const runCommand: CommandRunner = async () => ({
       stdout: "   ",

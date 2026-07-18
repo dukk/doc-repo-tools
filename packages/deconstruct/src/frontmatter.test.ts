@@ -24,6 +24,17 @@ describe("deconstruct frontmatter", () => {
     assert.ok(fm.tags.includes("deconstructed"));
   });
 
+  it("preserves explicit tags without duplicating deconstructed", () => {
+    const fm = buildFrontmatter({
+      type: "Reference",
+      title: "T",
+      description: "D",
+      resource: ".original/x.docx",
+      tags: ["deconstructed", "policy"],
+    });
+    assert.deepEqual(fm.tags, ["deconstructed", "policy"]);
+  });
+
   it("renders document.md with frontmatter", () => {
     const fm = buildFrontmatter({
       type: "Reference",
@@ -40,6 +51,7 @@ describe("deconstruct frontmatter", () => {
 
   it("reads title from metadata", () => {
     assert.equal(titleFromMetadata({ title: " From meta " }), "From meta");
+    assert.equal(titleFromMetadata({ Title: "Caps" }), "Caps");
   });
 
   it("truncates long descriptions", () => {
