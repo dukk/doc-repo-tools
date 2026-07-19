@@ -2,6 +2,7 @@ import { existsSync, readdirSync, readFileSync, statSync } from "node:fs";
 import path from "node:path";
 import { parse as parseYaml } from "yaml";
 import { OutputFormat, parseFormats } from "./formats.js";
+import { resolvePrimarySourcePath } from "./primary-source.js";
 
 export const DOCUMENT_FILE = "document.md";
 export const CONVERT_CONFIG_FILE = "convert.yaml";
@@ -63,7 +64,7 @@ export type DocumentPackage = {
   configPath: string;
   slug: string;
   config: ConvertConfig;
-  /** Present when package still uses the classic document.md entrypoint. */
+  /** Primary concept source (legacy document.md or title-named .md). */
   documentPath: string | null;
 };
 
@@ -264,13 +265,13 @@ export function loadDocumentPackage(dir: string): DocumentPackage {
   if (!existsSync(configPath)) {
     throw new Error(`Not a document package (missing ${CONVERT_CONFIG_FILE}): ${abs}`);
   }
-  const documentPath = path.join(abs, DOCUMENT_FILE);
+  const primarySource = resolvePrimarySourcePath(abs, path.basename(abs));
   return {
     dir: abs,
     configPath,
     slug: path.basename(abs),
     config: loadConvertConfig(configPath),
-    documentPath: existsSync(documentPath) ? documentPath : null,
+    documentPath: primarySource,
   };
 }
 

@@ -46,7 +46,7 @@ describe("deconstructFile", () => {
     assert.equal(readFileSync(originalPath, "utf8"), "FAKE-DOCX-BYTES");
     assert.equal(sha256File(originalPath), sha256File(source));
 
-    const doc = readFileSync(path.join(result.packageDir, "document.md"), "utf8");
+    const doc = readFileSync(path.join(result.packageDir, "handbook.md"), "utf8");
     assert.match(doc, /type: Reference/);
     assert.match(doc, /resource: \.original\/handbook\.docx/);
     assert.match(doc, /Imported body paragraph/);
@@ -118,8 +118,8 @@ describe("deconstructFile", () => {
       repoRoot: root,
     });
     assert.equal(results.length, 2);
-    assert.ok(existsSync(path.join(outRoot, "one", "document.md")));
-    assert.ok(existsSync(path.join(outRoot, "two", "document.md")));
+    assert.ok(existsSync(path.join(outRoot, "one", "one.md")));
+    assert.ok(existsSync(path.join(outRoot, "two", "two.md")));
   });
 
   it("errors when no extractor matches", async () => {
@@ -182,7 +182,7 @@ describe("deconstructFile", () => {
       repoRoot: root,
       force: true,
     });
-    const doc = readFileSync(path.join(outDir, "document.md"), "utf8");
+    const doc = readFileSync(path.join(outDir, "a.md"), "utf8");
     assert.match(doc, /Body one/);
   });
 
@@ -237,7 +237,7 @@ describe("deconstructFile", () => {
       runCommand,
       repoRoot: root,
     });
-    const doc = readFileSync(path.join(root, "pkg", "document.md"), "utf8");
+    const doc = readFileSync(path.join(root, "pkg", "custom-title.md"), "utf8");
     assert.match(doc, /title: Custom Title/);
   });
 

@@ -16,7 +16,7 @@ Options: `--type`, `--title`, `--extractor auto|pandoc|<name>`, `--force`.
 my-doc/
   .original/source.docx
   deconstruct.yaml
-  document.md
+  <title-slug>.md
   convert.yaml
   assets/…
 ```

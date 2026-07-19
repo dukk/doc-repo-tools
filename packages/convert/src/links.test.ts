@@ -364,4 +364,73 @@ links:
     );
     assert.match(rewritten, /beta-doc\.docx/);
   });
+
+  it("resolves directory links to the primary named source", () => {
+    const root = mkdtempSync(path.join(tmpdir(), "link-dir-"));
+    dirs.push(root);
+    const alphaDir = path.join(root, "alpha");
+    const betaDir = path.join(root, "beta");
+    mkdirSync(alphaDir, { recursive: true });
+    mkdirSync(betaDir, { recursive: true });
+    writeFileSync(
+      path.join(alphaDir, "convert.yaml"),
+      `out: .output
+formats: [docx]
+sources:
+  include: ["**/*.md"]
+  unlisted: individual
+links:
+  markdown: output
+`,
+      "utf8",
+    );
+    writeFileSync(
+      path.join(betaDir, "convert.yaml"),
+      `out: .output
+formats: [docx]
+sources:
+  include: ["**/*.md"]
+  unlisted: individual
+links:
+  markdown: output
+`,
+      "utf8",
+    );
+    writeFileSync(
+      path.join(alphaDir, "alpha-doc.md"),
+      "---\ntype: X\ntitle: Alpha\n---\n\nSee [Beta](/beta/).\n",
+      "utf8",
+    );
+    writeFileSync(
+      path.join(betaDir, "beta-overview.md"),
+      "---\ntype: X\ntitle: Beta\n---\n\nBeta\n",
+      "utf8",
+    );
+    const pkgA = loadDocumentPackage(alphaDir);
+    const pkgB = loadDocumentPackage(betaDir);
+    const docsA = resolveLogicalDocuments(pkgA);
+    const docsB = resolveLogicalDocuments(pkgB);
+    const manifest = buildOutputManifest(
+      [pkgA, pkgB],
+      new Map([
+        [pkgA.dir, docsA],
+        [pkgB.dir, docsB],
+      ]),
+    );
+    const rewritten = rewriteMarkdownLinksWithOutDirs(
+      "See [Beta](/beta/).",
+      pkgA,
+      "alpha-doc.md",
+      docsA[0],
+      "docx",
+      manifest,
+      root,
+      new Map([
+        [pkgA.dir, path.join(alphaDir, ".output")],
+        [pkgB.dir, path.join(betaDir, ".output")],
+      ]),
+      [],
+    );
+    assert.match(rewritten, /beta\.docx/);
+  });
 });

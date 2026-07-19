@@ -64,7 +64,7 @@ Register custom extractors in repo-root `deconstruct.extractors.yaml` (see [`dec
 ```
 my-doc/
   convert.yaml          # required
-  document.md           # classic single-source package
+  operating-model.md    # title-named single-source package (kebab-case from title)
   # — or —
   intro.md              # multi-source package
   body.md

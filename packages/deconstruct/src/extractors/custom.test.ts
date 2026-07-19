@@ -12,7 +12,7 @@ after(() => {
 });
 
 describe("custom extractor", () => {
-  it("reads document.md from workDir when present", async () => {
+  it("reads a single markdown source from workDir when present", async () => {
     const runCommand: CommandRunner = async () => ({
       stdout: "ignored",
       stderr: "",

@@ -25,6 +25,7 @@ import {
   buildDeconstructYaml,
 } from "./package-writer.js";
 import { defaultRunCommand } from "./run-command.js";
+import { titleToSourceFilename } from "./title-filename.js";
 import type { DeconstructOptions, DeconstructResult } from "./types.js";
 
 export function findRepoRoot(startDir: string): string {
@@ -95,8 +96,13 @@ export async function deconstructFile(
 
   if (existsSync(packageDir) && !opts.force) {
     const hasPackage =
-      existsSync(path.join(packageDir, "document.md")) ||
-      existsSync(path.join(packageDir, "deconstruct.yaml"));
+      existsSync(path.join(packageDir, "deconstruct.yaml")) ||
+      readdirSync(packageDir).some(
+        (name) =>
+          name.toLowerCase().endsWith(".md") &&
+          name !== "index.md" &&
+          name !== "log.md",
+      );
     if (hasPackage) {
       throw new Error(
         `Package already exists at ${packageDir}. Pass --force to overwrite generated files (original copy is preserved if unchanged).`,
@@ -151,12 +157,14 @@ export async function deconstructFile(
       resource: originalRel,
     });
 
+    const sourceFile = titleToSourceFilename(title);
+
     writeFileSync(
-      path.join(packageDir, "document.md"),
+      path.join(packageDir, sourceFile),
       renderDocumentMd(frontmatter, extracted.markdown),
       "utf8",
     );
-    sourceFiles.push("document.md");
+    sourceFiles.push(sourceFile);
 
     for (const asset of extracted.assets) {
       const dest = path.join(packageDir, asset.relPath);

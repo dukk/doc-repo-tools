@@ -1,6 +1,7 @@
-import { existsSync } from "node:fs";
+import { existsSync, statSync } from "node:fs";
 import path from "node:path";
-import { DocumentPackage } from "./config.js";
+import { CONVERT_CONFIG_FILE, DocumentPackage } from "./config.js";
+import { resolvePrimarySourceRel } from "./primary-source.js";
 import { EXT, OutputFormat } from "./formats.js";
 import { LogicalDocument, sourceAnchorId } from "./sources.js";
 
@@ -95,10 +96,18 @@ function resolveMdTarget(
   }
 
   if (!candidate.toLowerCase().endsWith(".md")) {
-    // Directory link → document.md
-    const asDoc = path.join(candidate, "document.md");
-    if (existsSync(asDoc)) {
-      candidate = asDoc;
+    if (existsSync(candidate) && statSync(candidate).isDirectory()) {
+      const primary = existsSync(path.join(candidate, CONVERT_CONFIG_FILE))
+        ? resolvePrimarySourceRel(candidate)
+        : null;
+      if (primary) {
+        candidate = path.join(candidate, primary);
+      } else {
+        const legacy = path.join(candidate, "document.md");
+        if (existsSync(legacy)) {
+          candidate = legacy;
+        }
+      }
     } else if (!existsSync(candidate)) {
       return { abs: null, loc: null };
     }

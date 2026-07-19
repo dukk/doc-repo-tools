@@ -68,17 +68,29 @@ export function createCustomExtractor(
         );
       }
 
-      const docPath = path.join(ctx.workDir, "document.md");
+      const docCandidates = readdirSync(ctx.workDir).filter(
+        (name) =>
+          name.toLowerCase().endsWith(".md") &&
+          name !== "index.md" &&
+          name !== "log.md",
+      );
       let markdown = "";
-      if (existsSync(docPath)) {
-        markdown = readFileSync(docPath, "utf8");
+      if (docCandidates.length === 1) {
+        markdown = readFileSync(
+          path.join(ctx.workDir, docCandidates[0]!),
+          "utf8",
+        );
+      } else if (docCandidates.length > 1) {
+        throw new Error(
+          `Extractor "${config.name}" wrote multiple markdown files to workDir; leave one concept source .md file`,
+        );
       } else {
         markdown = result.stdout;
       }
 
       if (!markdown.trim()) {
         throw new Error(
-          `Extractor "${config.name}" produced empty markdown (write workDir/document.md or print to stdout)`,
+          `Extractor "${config.name}" produced empty markdown (write one workDir/*.md source or print to stdout)`,
         );
       }
 

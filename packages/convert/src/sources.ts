@@ -120,7 +120,7 @@ function safeOutputName(name: string): string {
 /**
  * Resolve logical documents for a package.
  * When `documents` is omitted:
- * - if document.md exists → one document named after the package slug
+ * - if a primary source is resolved → one document named after the package slug
  * - otherwise treat discovered sources via unlisted policy
  */
 export function resolveLogicalDocuments(pkg: DocumentPackage): LogicalDocument[] {
@@ -188,7 +188,7 @@ export function resolveLogicalDocuments(pkg: DocumentPackage): LogicalDocument[]
   if (docs.length === 0) {
     throw new Error(
       `No logical documents resolved for package ${pkg.slug}. ` +
-        `Add document.md, configure documents[], or include markdown sources.`,
+        `Add a concept source .md file, configure documents[], or include markdown sources.`,
     );
   }
 

@@ -5,6 +5,6 @@
 #   - name: my-tool
 #     match: ["*.special.docx"]
 #     command: ["node", "tools/extractors/my-tool.js", "{{input}}", "{{workDir}}"]
-#     # stdout = markdown body, or write workDir/document.md + assets/
+#     # stdout = markdown body, or write one workDir/*.md source + assets/
 
 extractors: []

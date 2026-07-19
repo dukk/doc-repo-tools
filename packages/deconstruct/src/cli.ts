@@ -77,7 +77,7 @@ Options:
   --force               Overwrite generated files (never overwrites .original with different bytes)
 
 Original source is copied verbatim to .original/ inside the package.
-Generated: document.md, convert.yaml, deconstruct.yaml, assets/
+Generated: <title>.md (kebab-case from title), convert.yaml, deconstruct.yaml, assets/
 
 Examples:
   doc-deconstruct imports/handbook.docx --out knowledge/text-heavy/handbook
